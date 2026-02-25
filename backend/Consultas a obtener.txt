@@ -1,0 +1,175 @@
+1. Stats Generales
+
+Obtiene horas, minutos, promedio de horas diarias, num de artistas escuchados, num de canciones escuchadas
+SELECT
+    ROUND(SUM(ms_played) / 3600000.0, 2) AS total_hours,
+    ROUND(SUM(ms_played) / 60000.0, 2) as total_minutes,
+	ROUND(SUM(ms_played) / (COUNT(DISTINCT ts::date) * 3600000.0), 2) AS average_daily_hours,
+    COUNT(DISTINCT artist_name) AS unique_artists,
+    COUNT(DISTINCT track_name) AS unique_songs
+FROM spotify_history
+WHERE spotify_uri LIKE 'spotify:track:%' AND ms_played > 10000
+
+
+
+2. Consumo Generales
+
+Top artistas
+SELECT 
+    RANK() OVER (ORDER BY COUNT(*) DESC) AS ranking,
+    artist_name, 
+    ROUND(SUM(ms_played) / 60000.0, 2) as minutes_played,
+    COUNT(*) as times_played
+FROM spotify_history
+WHERE spotify_uri LIKE 'spotify:track:%' AND ms_played > 10000
+GROUP BY artist_name
+ORDER BY minutes_played DESC
+LIMIT 10;
+
+Top canciones
+SELECT 
+    RANK() OVER (ORDER BY COUNT(*) DESC) AS ranking,
+    track_name, 
+    artist_name, 
+    COUNT(*) AS times_played
+FROM spotify_history
+WHERE spotify_uri LIKE 'spotify:track:%' AND ms_played > 10000
+GROUP BY track_name, artist_name
+ORDER BY times_played DESC
+LIMIT 10;
+
+Top albums
+SELECT 
+    RANK() OVER (ORDER BY COUNT(*) DESC) AS ranking,
+    album_name, 
+    artist_name, 
+    COUNT(*) AS times_played
+FROM spotify_history
+WHERE spotify_uri LIKE 'spotify:track:%' AND ms_played > 10000
+GROUP BY album_name, artist_name
+ORDER BY times_played DESC
+LIMIT 10;
+
+
+-- Implementadas
+
+
+
+
+
+3. Analisis de habitos
+
+Momentos del dia por bloque bloque_horario
+SELECT
+    CASE
+        WHEN EXTRACT(HOUR FROM ts) BETWEEN 6 AND 11 THEN 'Mañana'
+        WHEN EXTRACT(HOUR FROM ts) BETWEEN 12 AND 17 THEN 'Tarde'
+        WHEN EXTRACT(HOUR FROM ts) BETWEEN 18 AND 23 THEN 'Noche'
+        ELSE 'Madrugada'
+    END AS bloque_horario,
+    COUNT(*) AS total_escuchas
+FROM spotify_history
+WHERE spotify_uri LIKE 'spotify:track:%' AND ms_played > 10000
+GROUP BY bloque_horario
+ORDER BY total_escuchas DESC;
+
+
+Dia de la semana (0=domingo, 6=sabado)
+SELECT
+    TO_CHAR(ts, 'Day') AS dia_semana,
+    COUNT(*) AS total_reproducciones
+FROM spotify_history
+WHERE spotify_uri LIKE 'spotify:track:%' AND ms_played > 10000
+GROUP BY dia_semana, EXTRACT(DOW FROM ts)
+ORDER BY EXTRACT(DOW FROM ts) ;
+
+
+Comparativa anual (Tu año en música)
+SELECT
+    EXTRACT(YEAR FROM ts) AS anio,
+    SUM(ms_played) / 3600000 AS horas_totales,
+    SUM(ms_played) / 60000 AS minutos_totales,
+    COUNT(*) AS total_canciones
+FROM spotify_history
+WHERE spotify_uri LIKE 'spotify:track:%' AND ms_played > 10000
+GROUP BY anio
+ORDER BY anio;
+
+
+Evolución Histórica Mensual (Para el gráfico de líneas)
+SELECT
+    TO_CHAR(ts, 'YYYY-MM') AS mes,
+    SUM(ms_played) / 3600000 AS horas_mensuales,
+    SUM(ms_played) / 60000 AS minutos_mensuales
+FROM spotify_history
+WHERE spotify_uri LIKE 'spotify:track:%' AND ms_played > 10000
+GROUP BY mes
+ORDER BY mes;
+
+
+
+
+
+Otros: Son la misma consulta pero con un filtro adicional artist_name
+-- Top cancion por nombre de cancion y artista
+WITH ranking_completo AS (
+    SELECT
+        RANK() OVER (ORDER BY COUNT(*) DESC) AS posicion,
+        track_name,
+        artist_name,
+        album_name,
+        COUNT(*) AS veces_escuchada
+    FROM spotify_history
+    WHERE spotify_uri LIKE 'spotify:track:%' AND ms_played > 10000
+    GROUP BY track_name, artist_name, album_name
+)
+SELECT * FROM ranking_completo
+WHERE track_name ILIKE 'SORRY PAPI'
+    AND artist_name ILIKE 'Bad Bunny';
+
+-- Top canciones por nombre artista
+WITH ranking_completo AS (
+    SELECT
+        RANK() OVER (ORDER BY COUNT(*) DESC) AS posicion,
+        track_name,
+        artist_name,
+        album_name,
+        COUNT(*) AS veces_escuchada
+    FROM spotify_history
+    WHERE spotify_uri LIKE 'spotify:track:%' AND ms_played > 10000
+    GROUP BY track_name, artist_name, album_name
+)
+SELECT * FROM ranking_completo
+WHERE artist_name ILIKE 'Bad Bunny';
+
+
+
+
+
+--Buscar artista por nombre y obtener su num en Top
+WITH ranking_artistas AS (
+    SELECT
+        RANK() OVER (ORDER BY SUM(ms_played) DESC) AS posicion,
+        artist_name,
+        ROUND(SUM(ms_played) / 60000.0, 2) as minutos_totales,
+        COUNT(*) as reproducciones
+    FROM spotify_history
+    WHERE spotify_uri LIKE 'spotify:track:%' AND ms_played > 10000
+    GROUP BY artist_name
+)
+SELECT * FROM ranking_artistas
+WHERE artist_name ILIKE 'Soda Stereo';
+
+-- Top canciones por rango de fechas (similar a spotify wrapped)
+-- Usar consulta de ranking anterior y agregar filtros de fecha
+SELECT
+    RANK() OVER (ORDER BY COUNT(*) DESC) AS top,
+    track_name,
+    artist_name,
+    COUNT(*) AS veces_escuchada
+FROM spotify_history
+WHERE spotify_uri LIKE 'spotify:track:%' AND ms_played > 10000
+  AND ts >= '2022-01-01' AND ts < '2023-01-01' -- Cambiar según el periodo
+GROUP BY track_name, artist_name
+ORDER BY veces_escuchada DESC
+LIMIT 100;
