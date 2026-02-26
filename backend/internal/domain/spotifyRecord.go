@@ -46,11 +46,37 @@ type AlbumRankingDTO struct {
 	TimesPlayed int    `json:"times_played"`
 }
 
+type HabitTimeDTO struct {
+	Label string `json:"label"` // Mañana, Tarde, Lunes, Martes, 2023, etc.
+	Count int    `json:"count"`
+}
+
+type YearlyStatsDTO struct {
+	Year         int     `json:"year"`
+	TotalHours   float64 `json:"total_hours"`
+	TotalMinutes float64 `json:"total_minutes"`
+	TotalSongs   int     `json:"total_songs"`
+}
+
+type HistoryEvolutionDTO struct {
+	Year           string  `json:"year"`       // YYYY
+	Month          string  `json:"month"`      // MM
+	YearMonth      string  `json:"year_month"` // YYYY-MM
+	HoursMonthly   float64 `json:"hours_monthly"`
+	MinutesMonthly float64 `json:"minutes_monthly"`
+}
+
 // Filtros de búsqueda
 type SpotifyFilters struct {
 	StartDate *time.Time
 	EndDate   *time.Time
 	Search    string // Para artista o álbum
+	Artist    string // Filtro específico
+	Track     string // Filtro específico
 	StartHour *int   // 0-23
 	EndHour   *int   // 0-23
+}
+type ArtistTrackFilters struct {
+	Artist string
+	Track  string
 }

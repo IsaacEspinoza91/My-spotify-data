@@ -98,30 +98,32 @@ ORDER BY anio;
 
 Evolución Histórica Mensual (Para el gráfico de líneas)
 SELECT
-    TO_CHAR(ts, 'YYYY-MM') AS mes,
-    SUM(ms_played) / 3600000 AS horas_mensuales,
-    SUM(ms_played) / 60000 AS minutos_mensuales
+	TO_CHAR(ts, 'YYYY') AS year,
+    TO_CHAR(ts, 'MM') AS month,
+	TO_CHAR(ts, 'YYYY-MM') AS year_month,
+    SUM(ms_played) / 3600000 AS hours_monthly,
+    SUM(ms_played) / 60000 AS minutes_monthly
 FROM spotify_history
 WHERE spotify_uri LIKE 'spotify:track:%' AND ms_played > 10000
-GROUP BY mes
-ORDER BY mes;
+GROUP BY year, month, year_month
+ORDER BY year, month;
 
 
 
 
 
-Otros: Son la misma consulta pero con un filtro adicional artist_name
+Otros: Son la misma consulta pero con un filtro adicional artist_name.
+Uso de metodo GetTopSongs y filtros segun Aretist, y Track
 -- Top cancion por nombre de cancion y artista
 WITH ranking_completo AS (
     SELECT
         RANK() OVER (ORDER BY COUNT(*) DESC) AS posicion,
         track_name,
         artist_name,
-        album_name,
         COUNT(*) AS veces_escuchada
     FROM spotify_history
     WHERE spotify_uri LIKE 'spotify:track:%' AND ms_played > 10000
-    GROUP BY track_name, artist_name, album_name
+    GROUP BY track_name, artist_name
 )
 SELECT * FROM ranking_completo
 WHERE track_name ILIKE 'SORRY PAPI'
@@ -133,19 +135,16 @@ WITH ranking_completo AS (
         RANK() OVER (ORDER BY COUNT(*) DESC) AS posicion,
         track_name,
         artist_name,
-        album_name,
         COUNT(*) AS veces_escuchada
     FROM spotify_history
     WHERE spotify_uri LIKE 'spotify:track:%' AND ms_played > 10000
-    GROUP BY track_name, artist_name, album_name
+    GROUP BY track_name, artist_name
 )
 SELECT * FROM ranking_completo
 WHERE artist_name ILIKE 'Bad Bunny';
 
 
-
-
-
+-- Usas funcion GetTopArtists
 --Buscar artista por nombre y obtener su num en Top
 WITH ranking_artistas AS (
     SELECT
@@ -159,17 +158,3 @@ WITH ranking_artistas AS (
 )
 SELECT * FROM ranking_artistas
 WHERE artist_name ILIKE 'Soda Stereo';
-
--- Top canciones por rango de fechas (similar a spotify wrapped)
--- Usar consulta de ranking anterior y agregar filtros de fecha
-SELECT
-    RANK() OVER (ORDER BY COUNT(*) DESC) AS top,
-    track_name,
-    artist_name,
-    COUNT(*) AS veces_escuchada
-FROM spotify_history
-WHERE spotify_uri LIKE 'spotify:track:%' AND ms_played > 10000
-  AND ts >= '2022-01-01' AND ts < '2023-01-01' -- Cambiar según el periodo
-GROUP BY track_name, artist_name
-ORDER BY veces_escuchada DESC
-LIMIT 100;
