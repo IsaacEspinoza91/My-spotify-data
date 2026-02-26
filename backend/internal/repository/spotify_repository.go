@@ -19,8 +19,8 @@ type SpotifyRepository interface {
 	GetHabitsByDayOfWeek(ctx context.Context, f domain.SpotifyFilters) ([]domain.HabitTimeDTO, error)
 	GetYearlyStats(ctx context.Context, f domain.SpotifyFilters) ([]domain.YearlyStatsDTO, error)
 	GetHistoryEvolution(ctx context.Context, f domain.SpotifyFilters) ([]domain.HistoryEvolutionDTO, error)
-	GetRankedSongs(ctx context.Context, f domain.SpotifyFilters, artistTrack domain.ArtistTrackFilters) ([]domain.SongRankingDTO, error)
-	GetRankedArtist(ctx context.Context, f domain.SpotifyFilters, artist domain.ArtistTrackFilters) ([]domain.ArtistRankingDTO, error)
+	GetRankedSongs(ctx context.Context, f domain.SpotifyFilters, artistTrack domain.ArtistTrackFilters, limit int) ([]domain.SongRankingDTO, error)
+	GetRankedArtist(ctx context.Context, f domain.SpotifyFilters, artist domain.ArtistTrackFilters, limit int) ([]domain.ArtistRankingDTO, error)
 }
 
 type spotifyRepo struct {
@@ -74,7 +74,7 @@ func buildWhereClause(f domain.SpotifyFilters) (string, []interface{}) {
 
 // Filtros de artista y track,  afectan la VISUALIZACIÓN (Qué artista o canción quiero ver)
 func buildWhereArtistTrackClause(f domain.ArtistTrackFilters, startPlaceholder int) (string, []interface{}) {
-	clauses := []string{"1=1"} // Garantiza que siempre haya un WHERE válido
+	var clauses []string
 	var args []interface{}
 	p := startPlaceholder
 
@@ -87,6 +87,10 @@ func buildWhereArtistTrackClause(f domain.ArtistTrackFilters, startPlaceholder i
 		clauses = append(clauses, fmt.Sprintf("track_name ILIKE $%d", p))
 		args = append(args, "%"+f.Track+"%")
 		p++
+	}
+
+	if len(clauses) == 0 {
+		return "", nil
 	}
 
 	return "WHERE " + strings.Join(clauses, " AND "), args
@@ -106,10 +110,10 @@ func (r *spotifyRepo) GetTotalStats(ctx context.Context, f domain.SpotifyFilters
 
 	var stats domain.TotalStatsDTO
 	err := r.db.QueryRow(ctx, query, args...).Scan(
-		&stats.TotalHours, 
-		&stats.TotalMinutes, 
-		&stats.AverageDailyHours, 
-		&stats.UniqueArtists, 
+		&stats.TotalHours,
+		&stats.TotalMinutes,
+		&stats.AverageDailyHours,
+		&stats.UniqueArtists,
 		&stats.UniqueSongs,
 	)
 	return stats, err
@@ -250,9 +254,11 @@ func (r *spotifyRepo) GetHabitsByTimeOfDay(ctx context.Context, f domain.Spotify
 func (r *spotifyRepo) GetHabitsByDayOfWeek(ctx context.Context, f domain.SpotifyFilters) ([]domain.HabitTimeDTO, error) {
 	where, args := buildWhereClause(f)
 	query := fmt.Sprintf(`
-        SELECT TO_CHAR(ts, 'Day') AS label, COUNT(*) AS count
+        SELECT 
+			EXTRACT(DOW FROM ts) AS num_day, 
+			COUNT(*) AS count
         FROM spotify_history %s
-        GROUP BY label, EXTRACT(DOW FROM ts)
+        GROUP BY EXTRACT(DOW FROM ts)
         ORDER BY EXTRACT(DOW FROM ts)`, where)
 
 	rows, err := r.db.Query(ctx, query, args...)
@@ -264,7 +270,7 @@ func (r *spotifyRepo) GetHabitsByDayOfWeek(ctx context.Context, f domain.Spotify
 	var res []domain.HabitTimeDTO
 	for rows.Next() {
 		var d domain.HabitTimeDTO
-		if err := rows.Scan(&d.Label, &d.Count); err != nil {
+		if err := rows.Scan(&d.NumDay, &d.Count); err != nil {
 			return nil, err
 		}
 		res = append(res, d)
@@ -283,7 +289,7 @@ func (r *spotifyRepo) GetYearlyStats(ctx context.Context, f domain.SpotifyFilter
             COUNT(*) AS total_songs
         FROM spotify_history 
         %s
-        GROUP BY year ORDER BY year`,where)
+        GROUP BY year ORDER BY year`, where)
 
 	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
@@ -333,7 +339,7 @@ func (r *spotifyRepo) GetHistoryEvolution(ctx context.Context, f domain.SpotifyF
 	return resul, nil
 }
 
-func (r *spotifyRepo) GetRankedSongs(ctx context.Context, f domain.SpotifyFilters, artistTrack domain.ArtistTrackFilters) ([]domain.SongRankingDTO, error) {
+func (r *spotifyRepo) GetRankedSongs(ctx context.Context, f domain.SpotifyFilters, artistTrack domain.ArtistTrackFilters, limit int) ([]domain.SongRankingDTO, error) {
 	// 1. Filtros base (van dentro del ranking para acotar el tiempo/duración)
 	baseWhere, baseArgs := buildWhereClause(f)
 
@@ -356,10 +362,14 @@ func (r *spotifyRepo) GetRankedSongs(ctx context.Context, f domain.SpotifyFilter
         )
         SELECT * FROM ranking_completo
         %s
-        ORDER BY ranking ASC`, baseWhere, finalWhere)
+        ORDER BY ranking ASC
+		LIMIT $%d`, baseWhere, finalWhere, len(allArgs)+1)
 
+	allArgs = append(allArgs, limit)
 	rows, err := r.db.Query(ctx, query, allArgs...)
-	if err != nil {return nil, err}
+	if err != nil {
+		return nil, err
+	}
 	defer rows.Close()
 
 	var resul []domain.SongRankingDTO
@@ -373,7 +383,7 @@ func (r *spotifyRepo) GetRankedSongs(ctx context.Context, f domain.SpotifyFilter
 	return resul, nil
 }
 
-func (r *spotifyRepo) GetRankedArtist(ctx context.Context, f domain.SpotifyFilters, artist domain.ArtistTrackFilters) ([]domain.ArtistRankingDTO, error) {
+func (r *spotifyRepo) GetRankedArtist(ctx context.Context, f domain.SpotifyFilters, artist domain.ArtistTrackFilters, limit int) ([]domain.ArtistRankingDTO, error) {
 	baseWhere, baseArgs := buildWhereClause(f)
 	finalWhere, finalArgs := buildWhereArtistTrackClause(artist, len(baseArgs)+1)
 	allArgs := append(baseArgs, finalArgs...)
@@ -391,10 +401,14 @@ func (r *spotifyRepo) GetRankedArtist(ctx context.Context, f domain.SpotifyFilte
         )
         SELECT * FROM ranking_completo
         %s
-        ORDER BY ranking ASC`, baseWhere, finalWhere)
+        ORDER BY ranking ASC
+		LIMIT $%d`, baseWhere, finalWhere, len(allArgs)+1)
 
+	allArgs = append(allArgs, limit)
 	rows, err := r.db.Query(ctx, query, allArgs...)
-	if err != nil {return nil, err}
+	if err != nil {
+		return nil, err
+	}
 	defer rows.Close()
 
 	var resul []domain.ArtistRankingDTO

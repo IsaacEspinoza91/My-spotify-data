@@ -1,6 +1,9 @@
 package domain
 
-import "time"
+import (
+	"strings"
+	"time"
+)
 
 // Entidad de Base de Datos
 type SpotifyRecord struct {
@@ -47,8 +50,9 @@ type AlbumRankingDTO struct {
 }
 
 type HabitTimeDTO struct {
-	Label string `json:"label"` // Mañana, Tarde, Lunes, Martes, 2023, etc.
-	Count int    `json:"count"`
+	Label  string `json:"label,omitempty"` // Mañana, Tarde, Lunes, Martes, 2023, etc.
+	NumDay int    `json:"num_day,omitempty"`
+	Count  int    `json:"count"`
 }
 
 type YearlyStatsDTO struct {
@@ -80,3 +84,51 @@ type ArtistTrackFilters struct {
 	Artist string
 	Track  string
 }
+
+// Limpieza y validación de filtros
+func (f *SpotifyFilters) CleanAndValidate() {
+	// 1. Trim de strings para evitar espacios accidentales
+	f.Search = strings.TrimSpace(f.Search)
+	f.Artist = strings.TrimSpace(f.Artist)
+	f.Track = strings.TrimSpace(f.Track)
+
+	// 2. Validación de rango de horas
+	if f.StartHour != nil {
+		if *f.StartHour < 0 {
+			*f.StartHour = 0
+		}
+		if *f.StartHour > 23 {
+			*f.StartHour = 23
+		}
+	}
+	if f.EndHour != nil {
+		if *f.EndHour < 0 {
+			*f.EndHour = 0
+		}
+		if *f.EndHour > 23 {
+			*f.EndHour = 23
+		}
+	}
+
+	// 3. Validación de lógica temporal (opcional)
+	if f.StartDate != nil && f.EndDate != nil {
+		if f.StartDate.After(*f.EndDate) {
+			// Si la fecha inicio es mayor a la fin, podrías resetearlas o swapearlas
+			f.StartDate, f.EndDate = f.EndDate, f.StartDate
+		}
+	}
+}
+
+func (f *ArtistTrackFilters) Clean() {
+	f.Artist = strings.TrimSpace(f.Artist)
+	f.Track = strings.TrimSpace(f.Track)
+}
+
+type Season string
+
+const (
+	Summer Season = "summer"
+	Autumn Season = "autumn"
+	Winter Season = "winter"
+	Spring Season = "spring"
+)

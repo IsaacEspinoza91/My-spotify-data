@@ -3,9 +3,13 @@ package main
 import (
 	"context"
 	"log"
+	"net/http"
 
 	"github.com/IsaacEspinoza91/My-spotify-data/internal/config"
 	"github.com/IsaacEspinoza91/My-spotify-data/internal/database"
+	"github.com/IsaacEspinoza91/My-spotify-data/internal/handler"
+	"github.com/IsaacEspinoza91/My-spotify-data/internal/repository"
+	"github.com/IsaacEspinoza91/My-spotify-data/internal/service"
 )
 
 func main() {
@@ -20,5 +24,12 @@ func main() {
 	}
 	defer dbPool.Close()
 	log.Println("Conectado a PostgreSQL exitosamente")
+
+	repo := repository.NewSpotifyRepository(dbPool)
+	svc := service.NewSpotifyService(repo)
+	router := handler.NewRouter(svc)
+
+	log.Println("Servidor iniciado en :8080")
+	http.ListenAndServe(":8080", router)
 
 }

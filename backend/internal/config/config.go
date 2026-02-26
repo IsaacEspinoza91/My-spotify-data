@@ -35,7 +35,8 @@ func Load() *AppConfig {
 	dbName := getEnvOrFatal("DB_NAME")
 
 	// Construir el Data Source Name
-	dsn := fmt.Sprintf("postgres://%s:%s@%s:%s/%s", dbUser, dbPass, dbHost, dbPort, dbName)
+	dsn := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable&timezone=America/Santiago",
+		dbUser, dbPass, dbHost, dbPort, dbName)
 
 	return &AppConfig{
 		Port:  port,
