@@ -11,7 +11,7 @@ import (
 
 type SpotifyService interface {
 	GetDashboardStats(ctx context.Context, f domain.SpotifyFilters) (domain.TotalStatsDTO, error)
-	GetTopList(ctx context.Context, listType string, limit int, f domain.SpotifyFilters) (interface{}, error)
+	GetTopList(ctx context.Context, listType string, f domain.SpotifyFilters) (interface{}, error)
 	GetHabitAnalysis(ctx context.Context, habitType string, f domain.SpotifyFilters) ([]domain.HabitTimeDTO, error)
 	GetGlobalEvolution(ctx context.Context, f domain.SpotifyFilters) ([]domain.HistoryEvolutionDTO, error)
 	SearchRankedItem(ctx context.Context, f domain.SpotifyFilters, target domain.ArtistTrackFilters, limit int) (interface{}, error)
@@ -36,22 +36,27 @@ func (s *spotifyService) GetDashboardStats(ctx context.Context, f domain.Spotify
 	return s.repo.GetTotalStats(ctx, f)
 }
 
-func (s *spotifyService) GetTopList(ctx context.Context, listType string, limit int, f domain.SpotifyFilters) (interface{}, error) {
+func (s *spotifyService) GetTopList(ctx context.Context, listType string, f domain.SpotifyFilters) (interface{}, error) {
 	f.CleanAndValidate()
-	if limit <= 0 {
-		limit = 10
-	}
+	var data interface{}
+	var total int
+	var err error
 
 	switch listType {
 	case "artists":
-		return s.repo.GetTopArtists(ctx, limit, f)
+		data, total, err = s.repo.GetTopArtists(ctx, f)
 	case "songs":
-		return s.repo.GetTopSongs(ctx, limit, f)
+		data, total, err = s.repo.GetTopSongs(ctx, f)
 	case "albums":
-		return s.repo.GetTopAlbums(ctx, limit, f)
+		data, total, err = s.repo.GetTopAlbums(ctx, f)
 	default:
 		return nil, nil
 	}
+
+	if err != nil {
+		return domain.Pagination{}, err
+	}
+	return domain.NewPagination(data, total, f.Page, f.Limit), nil
 }
 
 func (s *spotifyService) GetHabitAnalysis(ctx context.Context, habitType string, f domain.SpotifyFilters) ([]domain.HabitTimeDTO, error) {
@@ -94,8 +99,9 @@ func (s *spotifyService) GetYearlyWrapped(ctx context.Context, year int) (interf
 	start := time.Date(year, 1, 1, 0, 0, 0, 0, loc)
 	end := start.AddDate(1, 0, 0).Add(-time.Second)
 
-	f := domain.SpotifyFilters{StartDate: &start, EndDate: &end}
-	return s.repo.GetTopSongs(ctx, 100, f)
+	f := domain.SpotifyFilters{StartDate: &start, EndDate: &end, Limit: 100, Page: 1}
+	songs, _, err := s.repo.GetTopSongs(ctx, f)
+	return songs, err
 }
 
 func (s *spotifyService) GetMonthlyWrapped(ctx context.Context, year, month int) (interface{}, error) {
@@ -107,8 +113,9 @@ func (s *spotifyService) GetMonthlyWrapped(ctx context.Context, year, month int)
 	start := time.Date(year, time.Month(month), 1, 0, 0, 0, 0, loc)
 	end := start.AddDate(0, 1, 0).Add(-time.Second)
 
-	f := domain.SpotifyFilters{StartDate: &start, EndDate: &end}
-	return s.repo.GetTopSongs(ctx, 100, f)
+	f := domain.SpotifyFilters{StartDate: &start, EndDate: &end, Limit: 100, Page: 1}
+	songs, _, err := s.repo.GetTopSongs(ctx, f)
+	return songs, err
 }
 
 func (s *spotifyService) GetSeasonalWrapped(ctx context.Context, year int, season domain.Season) (interface{}, error) {
@@ -138,6 +145,7 @@ func (s *spotifyService) GetSeasonalWrapped(ctx context.Context, year int, seaso
 		end = time.Date(year, 12, 20, 23, 59, 59, 0, loc)
 	}
 
-	f := domain.SpotifyFilters{StartDate: &start, EndDate: &end}
-	return s.repo.GetTopSongs(ctx, 100, f)
+	f := domain.SpotifyFilters{StartDate: &start, EndDate: &end, Limit: 100, Page: 1}
+	songs, _, err := s.repo.GetTopSongs(ctx, f)
+	return songs, err
 }

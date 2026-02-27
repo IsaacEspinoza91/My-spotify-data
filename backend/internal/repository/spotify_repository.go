@@ -12,9 +12,9 @@ import (
 // SpotifyRepository define las operaciones de base de datos
 type SpotifyRepository interface {
 	GetTotalStats(ctx context.Context, f domain.SpotifyFilters) (domain.TotalStatsDTO, error)
-	GetTopArtists(ctx context.Context, limit int, f domain.SpotifyFilters) ([]domain.ArtistRankingDTO, error)
-	GetTopSongs(ctx context.Context, limit int, f domain.SpotifyFilters) ([]domain.SongRankingDTO, error)
-	GetTopAlbums(ctx context.Context, limit int, f domain.SpotifyFilters) ([]domain.AlbumRankingDTO, error)
+	GetTopArtists(ctx context.Context, f domain.SpotifyFilters) ([]domain.ArtistRankingDTO, int, error)
+	GetTopSongs(ctx context.Context, f domain.SpotifyFilters) ([]domain.SongRankingDTO, int, error)
+	GetTopAlbums(ctx context.Context, f domain.SpotifyFilters) ([]domain.AlbumRankingDTO, int, error)
 	GetHabitsByTimeOfDay(ctx context.Context, f domain.SpotifyFilters) ([]domain.HabitTimeDTO, error)
 	GetHabitsByDayOfWeek(ctx context.Context, f domain.SpotifyFilters) ([]domain.HabitTimeDTO, error)
 	GetYearlyStats(ctx context.Context, f domain.SpotifyFilters) ([]domain.YearlyStatsDTO, error)
@@ -120,8 +120,14 @@ func (r *spotifyRepo) GetTotalStats(ctx context.Context, f domain.SpotifyFilters
 }
 
 // GetTopArtists obtiene el ranking de artistas
-func (r *spotifyRepo) GetTopArtists(ctx context.Context, limit int, f domain.SpotifyFilters) ([]domain.ArtistRankingDTO, error) {
+func (r *spotifyRepo) GetTopArtists(ctx context.Context, f domain.SpotifyFilters) ([]domain.ArtistRankingDTO, int, error) {
 	where, args := buildWhereClause(f)
+
+	// Query para el total (sin LIMIT ni OFFSET)
+	countQuery := fmt.Sprintf("SELECT COUNT(DISTINCT artist_name) FROM spotify_history %s", where)
+	total, _ := r.countRows(ctx, countQuery, args)
+
+	// Query con paginación
 	query := fmt.Sprintf(`
 		SELECT 
 			RANK() OVER (ORDER BY COUNT(*) DESC) AS ranking,
@@ -131,13 +137,13 @@ func (r *spotifyRepo) GetTopArtists(ctx context.Context, limit int, f domain.Spo
 		FROM spotify_history 
 		%s
 		GROUP BY artist_name
-		ORDER BY minutes_played DESC
-		LIMIT $%d`, where, len(args)+1)
+		ORDER BY 3 DESC
+		LIMIT $%d OFFSET $%d`, where, len(args)+1, len(args)+2)
 
-	args = append(args, limit)
+	args = append(args, f.Limit, f.Offset())
 	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer rows.Close()
 
@@ -145,17 +151,31 @@ func (r *spotifyRepo) GetTopArtists(ctx context.Context, limit int, f domain.Spo
 	for rows.Next() {
 		var dto domain.ArtistRankingDTO
 		if err := rows.Scan(&dto.Ranking, &dto.ArtistName, &dto.MinutesPlayed, &dto.TimesPlayed); err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 		rankings = append(rankings, dto)
 	}
-	return rankings, nil
+
+	if rankings == nil {
+		rankings = []domain.ArtistRankingDTO{}
+	}
+
+	return rankings, total, nil
 }
 
 // GetTopAlbums obtiene el ranking de álbumes
 // Util para wrappeds segun anio, mes, y estaciones del anio (capa service) LIMIT 100
-func (r *spotifyRepo) GetTopSongs(ctx context.Context, limit int, f domain.SpotifyFilters) ([]domain.SongRankingDTO, error) {
+func (r *spotifyRepo) GetTopSongs(ctx context.Context, f domain.SpotifyFilters) ([]domain.SongRankingDTO, int, error) {
 	where, args := buildWhereClause(f)
+
+	// Obtener el total de registros únicos para la paginación
+	countQuery := fmt.Sprintf("SELECT COUNT(DISTINCT (track_name, artist_name)) FROM spotify_history %s", where)
+	total, err := r.countRows(ctx, countQuery, args)
+	if err != nil {
+		return nil, 0, fmt.Errorf("error al contar canciones: %v", err)
+	}
+
+	// Query principal con RANK, LIMIT y OFFSET
 	query := fmt.Sprintf(`
 		SELECT 
 			RANK() OVER (ORDER BY COUNT(*) DESC) AS ranking, 
@@ -166,11 +186,12 @@ func (r *spotifyRepo) GetTopSongs(ctx context.Context, limit int, f domain.Spoti
 		%s
 		GROUP BY track_name, artist_name
 		ORDER BY times_played DESC
-		LIMIT $%d`, where, len(args)+1)
-	args = append(args, limit)
-	rows, err := r.db.Query(ctx, query, args...)
+		LIMIT $%d OFFSET $%d`, where, len(args)+1, len(args)+2)
+
+	pagedArgs := append(args, f.Limit, f.Offset())
+	rows, err := r.db.Query(ctx, query, pagedArgs...)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer rows.Close()
 
@@ -178,16 +199,36 @@ func (r *spotifyRepo) GetTopSongs(ctx context.Context, limit int, f domain.Spoti
 	for rows.Next() {
 		var dto domain.SongRankingDTO
 		if err := rows.Scan(&dto.Ranking, &dto.TrackName, &dto.ArtistName, &dto.TimesPlayed); err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 		rankings = append(rankings, dto)
 	}
-	return rankings, nil
+
+	// Si no hay resultados, retornamos un slice vacío (no nil)
+	if rankings == nil {
+		rankings = []domain.SongRankingDTO{}
+	}
+
+	return rankings, total, nil
+}
+
+func (r *spotifyRepo) countRows(ctx context.Context, tableQuery string, args []interface{}) (int, error) {
+	var total int
+	err := r.db.QueryRow(ctx, tableQuery, args...).Scan(&total)
+	return total, err
 }
 
 // GetTopAlbums obtiene el ranking de álbumes
-func (r *spotifyRepo) GetTopAlbums(ctx context.Context, limit int, f domain.SpotifyFilters) ([]domain.AlbumRankingDTO, error) {
+func (r *spotifyRepo) GetTopAlbums(ctx context.Context, f domain.SpotifyFilters) ([]domain.AlbumRankingDTO, int, error) {
 	where, args := buildWhereClause(f)
+
+	// Obtener el total de registros únicos
+	countQuery := fmt.Sprintf("SELECT COUNT(DISTINCT (album_name, artist_name)) FROM spotify_history %s", where)
+	total, err := r.countRows(ctx, countQuery, args)
+	if err != nil {
+		return nil, 0, fmt.Errorf("error al contar álbumes: %v", err)
+	}
+
 	query := fmt.Sprintf(`
 		SELECT 
 			RANK() OVER (ORDER BY COUNT(*) DESC) AS ranking, 
@@ -198,11 +239,12 @@ func (r *spotifyRepo) GetTopAlbums(ctx context.Context, limit int, f domain.Spot
 		%s
 		GROUP BY album_name, artist_name
 		ORDER BY times_played DESC
-		LIMIT $%d`, where, len(args)+1)
-	args = append(args, limit)
-	rows, err := r.db.Query(ctx, query, args...)
+		LIMIT $%d OFFSET $%d`, where, len(args)+1, len(args)+2)
+
+	pagedArgs := append(args, f.Limit, f.Offset())
+	rows, err := r.db.Query(ctx, query, pagedArgs...)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer rows.Close()
 
@@ -210,11 +252,16 @@ func (r *spotifyRepo) GetTopAlbums(ctx context.Context, limit int, f domain.Spot
 	for rows.Next() {
 		var dto domain.AlbumRankingDTO
 		if err := rows.Scan(&dto.Ranking, &dto.AlbumName, &dto.ArtistName, &dto.TimesPlayed); err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 		rankings = append(rankings, dto)
 	}
-	return rankings, nil
+
+	if rankings == nil {
+		rankings = []domain.AlbumRankingDTO{}
+	}
+
+	return rankings, total, nil
 }
 
 // Momentos del dia por bloque horario, cantidad de escuchas
@@ -270,9 +317,11 @@ func (r *spotifyRepo) GetHabitsByDayOfWeek(ctx context.Context, f domain.Spotify
 	var res []domain.HabitTimeDTO
 	for rows.Next() {
 		var d domain.HabitTimeDTO
-		if err := rows.Scan(&d.NumDay, &d.Count); err != nil {
+		var dayVal int // Variable temporal para el escaneo
+		if err := rows.Scan(&dayVal, &d.Count); err != nil {
 			return nil, err
 		}
+		d.NumDay = &dayVal // Asignamos la dirección de memoria
 		res = append(res, d)
 	}
 	return res, nil

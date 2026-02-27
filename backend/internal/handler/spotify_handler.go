@@ -53,6 +53,16 @@ func parseSpotifyFilters(r *http.Request) domain.SpotifyFilters {
 			f.EndHour = &h
 		}
 	}
+	if limitStr := r.URL.Query().Get("limit"); limitStr != "" {
+		if l, err := strconv.Atoi(limitStr); err == nil {
+			f.Limit = l
+		}
+	}
+	if pageStr := r.URL.Query().Get("page"); pageStr != "" {
+		if p, err := strconv.Atoi(pageStr); err == nil {
+			f.Page = p
+		}
+	}
 	return f
 }
 
@@ -67,11 +77,9 @@ func (h *SpotifyHandler) GetStats(w http.ResponseWriter, r *http.Request) {
 
 func (h *SpotifyHandler) GetTop(w http.ResponseWriter, r *http.Request) {
 	f := parseSpotifyFilters(r)
-	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
-	// El tipo (artists, songs, albums) viene de la URL
 	listType := r.URL.Path[strings.LastIndex(r.URL.Path, "/")+1:]
 
-	res, err := h.service.GetTopList(r.Context(), listType, limit, f)
+	res, err := h.service.GetTopList(r.Context(), listType, f)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

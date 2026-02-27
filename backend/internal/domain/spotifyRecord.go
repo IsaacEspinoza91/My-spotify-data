@@ -51,7 +51,7 @@ type AlbumRankingDTO struct {
 
 type HabitTimeDTO struct {
 	Label  string `json:"label,omitempty"` // Mañana, Tarde, Lunes, Martes, 2023, etc.
-	NumDay int    `json:"num_day,omitempty"`
+	NumDay *int   `json:"num_day,omitempty"`
 	Count  int    `json:"count"`
 }
 
@@ -79,6 +79,8 @@ type SpotifyFilters struct {
 	Track     string // Filtro específico
 	StartHour *int   // 0-23
 	EndHour   *int   // 0-23
+	Page      int
+	Limit     int
 }
 type ArtistTrackFilters struct {
 	Artist string
@@ -117,6 +119,19 @@ func (f *SpotifyFilters) CleanAndValidate() {
 			f.StartDate, f.EndDate = f.EndDate, f.StartDate
 		}
 	}
+
+	// 4. Validaciones paginacion
+	if f.Page <= 0 {
+		f.Page = 1
+	}
+	if f.Limit <= 0 {
+		f.Limit = 10
+	}
+}
+
+// Offset calcula el salto para SQL
+func (f *SpotifyFilters) Offset() int {
+	return (f.Page - 1) * f.Limit
 }
 
 func (f *ArtistTrackFilters) Clean() {
