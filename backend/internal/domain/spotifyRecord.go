@@ -33,20 +33,23 @@ type ArtistRankingDTO struct {
 	ArtistName    string  `json:"artist_name"`
 	MinutesPlayed float64 `json:"minutes_played"`
 	TimesPlayed   int     `json:"times_played"`
+	ArtistImage   *string `json:"artist_image"`
 }
 
 type SongRankingDTO struct {
-	Ranking     int    `json:"ranking"`
-	TrackName   string `json:"track_name"`
-	ArtistName  string `json:"artist_name"`
-	TimesPlayed int    `json:"times_played"`
+	Ranking     int     `json:"ranking"`
+	TrackName   string  `json:"track_name"`
+	ArtistName  string  `json:"artist_name"`
+	TimesPlayed int     `json:"times_played"`
+	SongImage   *string `json:"song_image"`
 }
 
 type AlbumRankingDTO struct {
-	Ranking     int    `json:"ranking"`
-	AlbumName   string `json:"album_name"`
-	ArtistName  string `json:"artist_name"`
-	TimesPlayed int    `json:"times_played"`
+	Ranking     int     `json:"ranking"`
+	AlbumName   string  `json:"album_name"`
+	ArtistName  string  `json:"artist_name"`
+	TimesPlayed int     `json:"times_played"`
+	AlbumImage  *string `json:"album_image"`
 }
 
 type HabitTimeDTO struct {
