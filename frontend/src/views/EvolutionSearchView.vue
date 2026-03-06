@@ -3,25 +3,36 @@ import { ref } from 'vue'
 import api from '../services/api'
 import LoadingSpinner from '../components/ui/LoadingSpinner.vue'
 import LineChart from '../components/ui/LineChart.vue'
+import BarChart from '../components/ui/BarChart.vue'
+import DoughnutChart from '../components/ui/DoughnutChart.vue'
 import { Search } from 'lucide-vue-next'
 
 const searchQuery = ref('')
 const searchType = ref('track')
 const loading = ref(false)
 const evolutionData = ref(null)
+const yearlyDataMinutes = ref(null)
+const yearlyDataSongs = ref(null)
 const errorMsg = ref('')
 
 const searchArtist = async () => {
   loading.value = true
   errorMsg.value = ''
   evolutionData.value = null
+  yearlyDataMinutes.value = null
+  yearlyDataSongs.value = null
   
   try {
     const params = searchQuery.value.trim() 
       ? { [searchType.value]: searchQuery.value.trim() } 
       : {}
-    const response = await api.getEvolution(params)
-    const data = response.data
+    const [evolutionRes, yearlyRes] = await Promise.all([
+      api.getEvolution(params),
+      api.getYearly(params)
+    ])
+    
+    const data = evolutionRes.data
+    const yearly = yearlyRes.data
     
     if (!data || data.length === 0) {
       errorMsg.value = "No se encontraron datos en tu historial para esta búsqueda."
@@ -38,6 +49,34 @@ const searchArtist = async () => {
           data: data.map(item => item.hours_monthly)
         }
       ]
+    }
+    
+    if (yearly && yearly.length > 0) {
+      const colors = [
+        '#1ED760', '#FF5A5F', '#00A699', '#FFB400', '#9C27B0', 
+        '#03A9F4', '#E91E63', '#00E676', '#3F51B5', '#FF7043', 
+        '#8BC34A', '#FFCA28'
+      ]
+      
+      yearlyDataMinutes.value = {
+        labels: yearly.map(item => item.year.toString()),
+        datasets: [{
+          label: 'Total Minutos',
+          backgroundColor: colors,
+          data: yearly.map(item => item.total_minutes),
+          borderWidth: 0,
+        }]
+      }
+      
+      yearlyDataSongs.value = {
+        labels: yearly.map(item => item.year.toString()),
+        datasets: [{
+          label: searchType.value === 'track' ? 'Total Veces Escuchada' : 'Total Canciones Únicas',
+          backgroundColor: colors,
+          data: yearly.map(item => item.total_songs),
+          borderWidth: 0,
+        }]
+      }
     }
   } catch (error) {
     console.error("Error fetching evolution data", error)
@@ -112,16 +151,43 @@ onMounted(() => {
       {{ errorMsg }}
     </div>
 
-    <div v-else-if="evolutionData" class="chart-wrapper card">
-      <h2 v-if="searchQuery">
-        Horas escuchadas de 
-        <span v-if="searchType === 'track'">canción</span>
-        <span v-else-if="searchType === 'album'">álbum</span>
-        <span v-else>artista</span>
-        "{{ searchQuery }}"
-      </h2>
-      <h2 v-else>Horas escuchadas generales</h2>
-      <LineChart :chartData="evolutionData" />
+    <div v-else-if="evolutionData" class="results-container">
+      <div class="chart-wrapper card main-chart">
+        <h2 v-if="searchQuery">
+          Horas escuchadas de 
+          <span v-if="searchType === 'track'">canción</span>
+          <span v-else-if="searchType === 'album'">álbum</span>
+          <span v-else>artista</span>
+          "{{ searchQuery }}"
+        </h2>
+        <h2 v-else>Horas escuchadas generales</h2>
+        <LineChart :chartData="evolutionData" />
+      </div>
+
+      <div class="yearly-charts-grid" v-if="yearlyDataMinutes && yearlyDataSongs">
+        <div class="chart-wrapper card sub-chart">
+          <h2 v-if="searchQuery">
+            Total Minutos Anuales 
+            <span v-if="searchType === 'track'">de la canción</span>
+            <span v-else-if="searchType === 'album'">del álbum</span>
+            <span v-else>del artista</span>
+            "{{ searchQuery }}"
+          </h2>
+          <h2 v-else>Total Minutos Anuales Generales</h2>
+          <BarChart :chartData="yearlyDataMinutes" />
+        </div>
+        
+        <div class="chart-wrapper card sub-chart">
+          <h2 v-if="searchQuery">
+            <span v-if="searchType === 'track'">Total anual de veces escuchada la canción</span>
+            <span v-else-if="searchType === 'album'">Total anual de canciones escuchadas del álbum</span>
+            <span v-else>Total anual de canciones escuchadas del artista</span>
+            "{{ searchQuery }}"
+          </h2>
+          <h2 v-else>Total Canciones Únicas Anuales Generales</h2>
+          <DoughnutChart :chartData="yearlyDataSongs" />
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -212,6 +278,18 @@ onMounted(() => {
   color: var(--spotify-text-gray);
 }
 
+.results-container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.yearly-charts-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
 .chart-wrapper {
   padding: 24px;
 }
@@ -219,5 +297,11 @@ onMounted(() => {
 .chart-wrapper h2 {
   font-size: 20px;
   margin-bottom: 24px;
+}
+
+@media (max-width: 900px) {
+  .yearly-charts-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

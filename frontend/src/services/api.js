@@ -43,7 +43,12 @@ export default {
         return api.get('/search-rank', { params });
     },
 
-    // 9, 10, 11. Wrapped
+    // 9. Yearly Snapshot
+    getYearly(params) {
+        return api.get('/yearly', { params });
+    },
+
+    // 10, 11, 12. Wrapped
     getWrapped(params) {
         return api.get('/wrapped', { params });
     }

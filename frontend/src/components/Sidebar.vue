@@ -12,11 +12,11 @@ import { useRoute } from 'vue-router'
 const route = useRoute()
 
 const navItems = [
-  { name: 'Dashboard', path: '/', icon: Home },
-  { name: 'Top Artists', path: '/artists', icon: Mic2 },
-  { name: 'Top Songs', path: '/songs', icon: Music },
-  { name: 'Top Albums', path: '/albums', icon: Disc },
-  { name: 'Evolution', path: '/evolution', icon: LineChart },
+  { name: 'Inicio', path: '/', icon: Home },
+  { name: 'Top Artistss', path: '/artists', icon: Mic2 },
+  { name: 'Top Canciones', path: '/songs', icon: Music },
+  { name: 'Top Álbumes', path: '/albums', icon: Disc },
+  { name: 'Evolución', path: '/evolution', icon: LineChart },
   { name: 'Wrapped', path: '/wrapped', icon: Gift },
 ]
 </script>
@@ -93,7 +93,7 @@ const navItems = [
 }
 
 .nav-item.active {
-  color: var(--spotify-white);
+  color: var(--spotify-green);
   background-color: var(--spotify-light-gray);
 }
 

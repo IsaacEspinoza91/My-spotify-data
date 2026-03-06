@@ -2,7 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import api from '../services/api'
 import LoadingSpinner from '../components/ui/LoadingSpinner.vue'
-import { Play } from 'lucide-vue-next'
+import { Play, Music } from 'lucide-vue-next'
 
 const loading = ref(false)
 const wrappedData = ref([])
@@ -117,8 +117,16 @@ const formatNumber = (num) => new Intl.NumberFormat('es-CL').format(num || 0)
     <div v-else-if="wrappedData.length > 0" class="content-wrapper">
       <div class="wrapped-banner gradient-bg">
         <h2>Top Tracks</h2>
-        <div class="big-number">#1 {{ wrappedData[0].track_name }}</div>
-        <p>de {{ wrappedData[0].artist_name }} ({{ wrappedData[0].times_played }} reproducciones)</p>
+        <div class="hero-content">
+          <img v-if="wrappedData[0].song_image" :src="wrappedData[0].song_image" class="hero-image" />
+          <div class="hero-image-fallback" v-else>
+            <Music :size="48" />
+          </div>
+          <div class="hero-text">
+            <div class="big-number">#1 {{ wrappedData[0].track_name }}</div>
+            <p>de {{ wrappedData[0].artist_name }} ({{ wrappedData[0].times_played }} reproducciones)</p>
+          </div>
+        </div>
       </div>
 
       <div class="songs-table-container mt-4">
@@ -137,9 +145,15 @@ const formatNumber = (num) => new Intl.NumberFormat('es-CL').format(num || 0)
                 <Play class="play-icon" :size="16" />
               </td>
               <td class="col-title">
-                <div class="song-info">
-                  <div class="song-name">{{ song.track_name }}</div>
-                  <div class="song-artist text-gray">{{ song.artist_name }}</div>
+                <div class="song-info-wrapper">
+                  <img v-if="song.song_image" :src="song.song_image" class="table-song-image" />
+                  <div class="table-song-fallback" v-else>
+                    <Music :size="16" />
+                  </div>
+                  <div class="song-info">
+                    <div class="song-name">{{ song.track_name }}</div>
+                    <div class="song-artist text-gray">{{ song.artist_name }}</div>
+                  </div>
                 </div>
               </td>
               <td class="col-plays text-gray">{{ formatNumber(song.times_played) }}</td>
@@ -198,11 +212,12 @@ const formatNumber = (num) => new Intl.NumberFormat('es-CL').format(num || 0)
   background-color: var(--spotify-light-gray);
   color: var(--spotify-white);
   border: 1px solid transparent;
-  padding: 10px 16px;
+  padding: 0 16px;
   border-radius: 4px;
   font-size: 14px;
   min-width: 140px;
   height: 40px;
+  box-sizing: border-box;
 }
 
 .spotify-select:focus, .spotify-input:focus {
@@ -231,7 +246,38 @@ const formatNumber = (num) => new Intl.NumberFormat('es-CL').format(num || 0)
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 2px;
-  margin-bottom: 8px;
+  margin-bottom: 24px;
+}
+
+.hero-content {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+}
+
+.hero-image {
+  width: 140px;
+  height: 140px;
+  border-radius: 8px;
+  object-fit: cover;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+.hero-image-fallback {
+  width: 140px;
+  height: 140px;
+  border-radius: 8px;
+  background-color: var(--spotify-dark-gray);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--spotify-text-gray);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+.hero-text {
+  display: flex;
+  flex-direction: column;
 }
 
 .big-number {
@@ -305,6 +351,30 @@ const formatNumber = (num) => new Intl.NumberFormat('es-CL').format(num || 0)
 
 .col-title {
   padding: 12px 16px;
+}
+
+.song-info-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.table-song-image {
+  width: 40px;
+  height: 40px;
+  border-radius: 4px;
+  object-fit: cover;
+}
+
+.table-song-fallback {
+  width: 40px;
+  height: 40px;
+  border-radius: 4px;
+  background-color: var(--spotify-light-gray);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--spotify-text-gray);
 }
 
 .song-info {

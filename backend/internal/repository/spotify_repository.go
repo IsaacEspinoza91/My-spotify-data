@@ -272,7 +272,7 @@ func (r *spotifyRepo) GetTopAlbums(ctx context.Context, f domain.SpotifyFilters)
 		FROM ranking_completo
 		%s
 		ORDER BY ranking ASC
-		LIMIT $%d OFFSET $%d`, 
+		LIMIT $%d OFFSET $%d`,
 		baseWhere, searchWhere, len(allArgs)+1, len(allArgs)+2)
 
 	finalArgs := append(allArgs, f.Limit, f.Offset())
@@ -443,41 +443,15 @@ func (r *spotifyRepo) GetHistoryEvolution(ctx context.Context, f domain.SpotifyF
 	return resul, nil
 }
 
-
-func buildWhereArtistTrackClause(f domain.ArtistTrackFilters, startPlaceholder int) (string, []interface{}) {
-	var clauses []string
-	var args []interface{}
-	p := startPlaceholder
-
-	// WHERE actúa sobre las columnas resultantes de la CTE 'ranking_completo'
-	if f.Artist != "" {
-		clauses = append(clauses, fmt.Sprintf("artist_name ILIKE $%d", p))
-		args = append(args, "%"+f.Artist+"%")
-		p++
-	}
-	if f.Track != "" {
-		clauses = append(clauses, fmt.Sprintf("track_name ILIKE $%d", p))
-		args = append(args, "%"+f.Track+"%")
-		p++
-	}
-
-	if len(clauses) == 0 {
+func buildSearchFilters(f domain.SpotifyFilters, startPlaceholder int) (string, []interface{}) {
+	if f.Search == "" {
 		return "", nil
 	}
 
-	return "WHERE " + strings.Join(clauses, " AND "), args
-}
+	clause := fmt.Sprintf("(artist_name ILIKE $%d OR track_name ILIKE $%d OR album_name ILIKE $%d)",
+		startPlaceholder, startPlaceholder, startPlaceholder)
 
-
-func buildSearchFilters(f domain.SpotifyFilters, startPlaceholder int) (string, []interface{}) {
-    if f.Search == "" {
-        return "", nil
-    }
-
-    clause := fmt.Sprintf("(artist_name ILIKE $%d OR track_name ILIKE $%d OR album_name ILIKE $%d)", 
-        startPlaceholder, startPlaceholder, startPlaceholder)
-    
-    return "WHERE " + clause, []interface{}{"%" + f.Search + "%"}
+	return "WHERE " + clause, []interface{}{"%" + f.Search + "%"}
 }
 
 func buildBaseFilters(f domain.SpotifyFilters) (string, []interface{}) {

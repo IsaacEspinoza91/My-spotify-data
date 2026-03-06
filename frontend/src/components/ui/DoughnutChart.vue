@@ -1,17 +1,15 @@
 <script setup>
 import { computed } from 'vue'
-import { Bar } from 'vue-chartjs'
+import { Doughnut } from 'vue-chartjs'
 import { 
   Chart as ChartJS, 
   Title, 
   Tooltip, 
   Legend, 
-  BarElement, 
-  CategoryScale, 
-  LinearScale 
+  ArcElement
 } from 'chart.js'
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
+ChartJS.register(ArcElement, Title, Tooltip, Legend)
 
 const props = defineProps({
   chartData: {
@@ -27,13 +25,14 @@ const props = defineProps({
 const chartOptions = computed(() => ({
   responsive: true,
   maintainAspectRatio: false,
-  interaction: {
-    mode: 'index',
-    intersect: false,
-  },
   plugins: {
     legend: {
-      display: false
+      display: true,
+      position: 'right',
+      labels: {
+        color: '#b3b3b3',
+        padding: 20
+      }
     },
     title: {
       display: !!props.title,
@@ -47,22 +46,13 @@ const chartOptions = computed(() => ({
       cornerRadius: 4
     }
   },
-  scales: {
-    x: {
-      grid: { display: false },
-      ticks: { color: '#b3b3b3' }
-    },
-    y: {
-      grid: { color: '#282828' },
-      ticks: { color: '#b3b3b3' }
-    }
-  }
+  borderWidth: 0
 }))
 </script>
 
 <template>
   <div class="chart-container">
-    <Bar :data="chartData" :options="chartOptions" />
+    <Doughnut :data="chartData" :options="chartOptions" />
   </div>
 </template>
 
