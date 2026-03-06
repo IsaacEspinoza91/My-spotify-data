@@ -5,7 +5,10 @@ import {
   Music, 
   Disc, 
   LineChart, 
-  Gift 
+  Gift,
+  Github,
+  Linkedin,
+  Mail
 } from 'lucide-vue-next'
 import { useRoute } from 'vue-router'
 
@@ -40,6 +43,21 @@ const navItems = [
         <span class="label">{{ item.name }}</span>
       </router-link>
     </nav>
+
+    <div class="sidebar-footer">
+      <div class="footer-text">Creado por Isaac Espinoza</div>
+      <div class="footer-links">
+        <a href="https://github.com/IsaacEspinoza91/My-spotify-data" target="_blank" rel="noopener noreferrer" class="footer-icon" title="GitHub">
+          <Github :size="20" />
+        </a>
+        <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" class="footer-icon" title="LinkedIn">
+          <Linkedin :size="20" />
+        </a>
+        <a href="mailto:isaac.eb@proton.me" class="footer-icon" title="Email">
+          <Mail :size="20" />
+        </a>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -103,5 +121,38 @@ const navItems = [
 
 .label {
   font-size: 14px;
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  padding: 32px 16px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.footer-text {
+  font-size: 12px;
+  color: var(--spotify-text-gray);
+  font-weight: 500;
+}
+
+.footer-links {
+  display: flex;
+  gap: 20px;
+}
+
+.footer-icon {
+  color: var(--spotify-white);
+  transition: color 0.2s ease, transform 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.footer-icon:hover {
+  color: var(--spotify-green);
+  transform: scale(1.1);
 }
 </style>
