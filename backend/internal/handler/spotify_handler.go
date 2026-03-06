@@ -25,6 +25,7 @@ func parseSpotifyFilters(r *http.Request) domain.SpotifyFilters {
 		Search: r.URL.Query().Get("search"),
 		Artist: r.URL.Query().Get("artist"),
 		Track:  r.URL.Query().Get("track"),
+		Album:  r.URL.Query().Get("album"),
 	}
 
 	// Cargar la zona horaria de Chile
@@ -67,7 +68,7 @@ func parseSpotifyFilters(r *http.Request) domain.SpotifyFilters {
 }
 
 func (h *SpotifyHandler) GetStats(w http.ResponseWriter, r *http.Request) {
-	stats, err := h.service.GetDashboardStats(r.Context(), parseSpotifyFilters(r))
+	stats, err := h.service.GetDashboardStats(r.Context())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -90,7 +91,7 @@ func (h *SpotifyHandler) GetTop(w http.ResponseWriter, r *http.Request) {
 func (h *SpotifyHandler) GetHabits(w http.ResponseWriter, r *http.Request) {
 	// habit_type puede ser "time" o "dow" (day of week)
 	hType := r.URL.Query().Get("type")
-	res, err := h.service.GetHabitAnalysis(r.Context(), hType, parseSpotifyFilters(r))
+	res, err := h.service.GetHabitAnalysis(r.Context(), hType)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -109,21 +110,6 @@ func (h *SpotifyHandler) GetEvolution(w http.ResponseWriter, r *http.Request) {
 
 func (h *SpotifyHandler) GetYearly(w http.ResponseWriter, r *http.Request) {
 	res, err := h.service.GetYearlyStats(r.Context(), parseSpotifyFilters(r))
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	json.NewEncoder(w).Encode(res)
-}
-
-func (h *SpotifyHandler) SearchRanking(w http.ResponseWriter, r *http.Request) {
-	f := parseSpotifyFilters(r)
-	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
-	target := domain.ArtistTrackFilters{
-		Artist: r.URL.Query().Get("target_artist"),
-		Track:  r.URL.Query().Get("target_track"),
-	}
-	res, err := h.service.SearchRankedItem(r.Context(), f, target, limit)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

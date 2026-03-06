@@ -6,6 +6,7 @@ import LineChart from '../components/ui/LineChart.vue'
 import { Search } from 'lucide-vue-next'
 
 const searchQuery = ref('')
+const searchType = ref('track')
 const loading = ref(false)
 const evolutionData = ref(null)
 const errorMsg = ref('')
@@ -16,7 +17,10 @@ const searchArtist = async () => {
   evolutionData.value = null
   
   try {
-    const response = await api.getEvolution({ search: searchQuery.value })
+    const params = searchQuery.value.trim() 
+      ? { [searchType.value]: searchQuery.value.trim() } 
+      : {}
+    const response = await api.getEvolution(params)
     const data = response.data
     
     if (!data || data.length === 0) {
@@ -62,7 +66,7 @@ onMounted(() => {
   <div class="evolution-view view-container">
     <header class="view-header">
       <h1>Evolución de Escucha</h1>
-      <p class="text-gray subtitle">Busca un artista para ver cómo ha evolucionado tu tiempo escuchándolo a lo largo de los meses.</p>
+      <p class="text-gray subtitle">Busca una canción, álbum o artista para ver cómo ha evolucionado tu tiempo escuchándolo a lo largo de los meses.</p>
     </header>
 
     <div class="search-container">
@@ -76,6 +80,30 @@ onMounted(() => {
           @input="debouncedSearch"
         />
       </div>
+      
+      <div class="type-filters">
+        <button 
+          class="type-btn" 
+          :class="{ active: searchType === 'track' }"
+          @click="searchType = 'track'; debouncedSearch()"
+        >
+          Canción
+        </button>
+        <button 
+          class="type-btn" 
+          :class="{ active: searchType === 'album' }"
+          @click="searchType = 'album'; debouncedSearch()"
+        >
+          Álbum
+        </button>
+        <button 
+          class="type-btn" 
+          :class="{ active: searchType === 'artist' }"
+          @click="searchType = 'artist'; debouncedSearch()"
+        >
+          Artista
+        </button>
+      </div>
     </div>
 
     <LoadingSpinner v-if="loading" />
@@ -85,7 +113,13 @@ onMounted(() => {
     </div>
 
     <div v-else-if="evolutionData" class="chart-wrapper card">
-      <h2 v-if="searchQuery">Horas escuchadas de "{{ searchQuery }}"</h2>
+      <h2 v-if="searchQuery">
+        Horas escuchadas de 
+        <span v-if="searchType === 'track'">canción</span>
+        <span v-else-if="searchType === 'album'">álbum</span>
+        <span v-else>artista</span>
+        "{{ searchQuery }}"
+      </h2>
       <h2 v-else>Horas escuchadas generales</h2>
       <LineChart :chartData="evolutionData" />
     </div>
@@ -111,6 +145,8 @@ onMounted(() => {
 
 .search-container {
   display: flex;
+  flex-direction: column;
+  gap: 16px;
   margin-bottom: 24px;
 }
 
@@ -140,6 +176,34 @@ onMounted(() => {
 
 .search-input::placeholder {
   color: var(--spotify-text-gray);
+}
+
+.type-filters {
+  display: flex;
+  gap: 12px;
+}
+
+.type-btn {
+  background-color: transparent;
+  color: var(--spotify-text-gray);
+  border: 1px solid var(--spotify-text-gray);
+  padding: 6px 16px;
+  border-radius: 24px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.type-btn:hover {
+  color: var(--spotify-white);
+  border-color: var(--spotify-white);
+}
+
+.type-btn.active {
+  background-color: var(--spotify-white);
+  color: var(--spotify-black);
+  border-color: var(--spotify-white);
 }
 
 .error-message {

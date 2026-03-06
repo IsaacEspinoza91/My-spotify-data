@@ -77,9 +77,10 @@ type HistoryEvolutionDTO struct {
 type SpotifyFilters struct {
 	StartDate *time.Time
 	EndDate   *time.Time
-	Search    string // Para artista o álbum
+	Search    string // Busqueda simultanea de artist, track y album
 	Artist    string // Filtro específico
 	Track     string // Filtro específico
+	Album 	  string
 	StartHour *int   // 0-23
 	EndHour   *int   // 0-23
 	Page      int
@@ -96,6 +97,7 @@ func (f *SpotifyFilters) CleanAndValidate() {
 	f.Search = strings.TrimSpace(f.Search)
 	f.Artist = strings.TrimSpace(f.Artist)
 	f.Track = strings.TrimSpace(f.Track)
+	f.Album = strings.TrimSpace(f.Album)
 
 	// 2. Validación de rango de horas
 	if f.StartHour != nil {
