@@ -103,10 +103,13 @@ onMounted(() => {
 
 <template>
   <div class="evolution-view view-container">
-    <header class="view-header">
-      <h1>Evolución de Escucha</h1>
-      <p class="text-gray subtitle">Busca una canción, álbum o artista para ver cómo ha evolucionado tu tiempo escuchándolo a lo largo de los meses.</p>
-    </header>
+    <div class="view-hero-bg"></div>
+    
+    <div class="view-content-wrapper relative-z">
+      <header class="view-header">
+        <h1>Evolución de Escucha</h1>
+        <p class="text-gray subtitle">Busca una canción, álbum o artista para ver cómo ha evolucionado tu tiempo escuchándolo a lo largo de los meses.</p>
+      </header>
 
     <div class="search-container">
       <div class="search-bar">
@@ -114,7 +117,7 @@ onMounted(() => {
         <input 
           v-model="searchQuery" 
           type="text" 
-          placeholder="Ej: Bad Bunny, Radiohead, Los Tres..."
+          placeholder="Buscar canción, álbum o artista..."
           class="search-input"
           @input="debouncedSearch"
         />
@@ -189,11 +192,34 @@ onMounted(() => {
         </div>
       </div>
     </div>
+    </div>
   </div>
 </template>
 
 <style scoped>
 .view-container {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  min-height: 100%;
+}
+
+.view-hero-bg {
+  position: absolute;
+  top: -24px;
+  left: -24px;
+  right: -24px;
+  height: 200px;
+  background: linear-gradient(180deg, rgba(40, 100, 90, 1) 0%, rgba(24, 24, 24, 1) 100%);
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.relative-z {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   gap: 24px;
@@ -203,6 +229,7 @@ onMounted(() => {
   font-size: 32px;
   font-weight: 800;
   margin-bottom: 8px;
+  margin-top: 32px;
 }
 
 .subtitle {

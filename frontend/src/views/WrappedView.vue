@@ -67,11 +67,14 @@ const formatNumber = (num) => new Intl.NumberFormat('es-CL').format(num || 0)
 
 <template>
   <div class="wrapped-view view-container">
-    <header class="view-header">
-      <div class="header-content">
-        <h1>Tu Wrapped</h1>
-        <p class="text-gray subtitle">Descubre tus canciones más escuchadas por periodo</p>
-      </div>
+    <div class="view-hero-bg"></div>
+    
+    <div class="view-content-wrapper relative-z">
+      <header class="view-header">
+        <div class="header-content">
+          <h1>Tu Wrapped</h1>
+          <p class="text-gray subtitle">Descubre tus canciones más escuchadas por periodo</p>
+        </div>
       
       <div class="filters-container">
         <div class="filter-group">
@@ -162,11 +165,34 @@ const formatNumber = (num) => new Intl.NumberFormat('es-CL').format(num || 0)
         </table>
       </div>
     </div>
+    </div>
   </div>
 </template>
 
 <style scoped>
 .view-container {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  min-height: 100%;
+}
+
+.view-hero-bg {
+  position: absolute;
+  top: -24px;
+  left: -24px;
+  right: -24px;
+  height: 200px;
+  background: linear-gradient(180deg, rgba(30, 120, 60, 1) 0%, rgba(24, 24, 24, 1) 100%);
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.relative-z {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   gap: 32px;
@@ -176,6 +202,7 @@ const formatNumber = (num) => new Intl.NumberFormat('es-CL').format(num || 0)
   display: flex;
   flex-direction: column;
   gap: 24px;
+  margin-top: 32px;
 }
 
 .view-header h1 {

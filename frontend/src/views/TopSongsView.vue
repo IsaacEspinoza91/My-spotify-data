@@ -64,9 +64,13 @@ const formatNumber = (num) => new Intl.NumberFormat('es-CL').format(num || 0)
 
 <template>
   <div class="top-songs-view view-container">
-    <header class="view-header">
-      <h1>Top Canciones</h1>
-    </header>
+    <div class="view-hero-bg"></div>
+    
+    <div class="view-content-wrapper relative-z">
+      <header class="view-header">
+        <h1>Top Canciones</h1>
+        <p class="text-gray subtitle">Los temas indiscutibles que te acompañan cada día.</p>
+      </header>
 
     <FiltersBar 
       v-model="filters" 
@@ -117,11 +121,34 @@ const formatNumber = (num) => new Intl.NumberFormat('es-CL').format(num || 0)
         :total="total" 
       />
     </div>
+    </div>
   </div>
 </template>
 
 <style scoped>
 .view-container {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  min-height: 100%;
+}
+
+.view-hero-bg {
+  position: absolute;
+  top: -24px;
+  left: -24px;
+  right: -24px;
+  height: 200px;
+  background: linear-gradient(180deg, rgba(40, 60, 100, 1) 0%, rgba(24, 24, 24, 1) 100%);
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.relative-z {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   gap: 24px;
@@ -130,6 +157,12 @@ const formatNumber = (num) => new Intl.NumberFormat('es-CL').format(num || 0)
 .view-header h1 {
   font-size: 32px;
   font-weight: 800;
+  margin-top: 32px;
+  margin-bottom: 8px;
+}
+
+.subtitle {
+  font-size: 16px;
 }
 
 .empty-state {

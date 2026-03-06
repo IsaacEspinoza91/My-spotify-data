@@ -43,7 +43,6 @@ import TopBar from './components/TopBar.vue'
   background-color: var(--spotify-dark-gray);
   border-radius: 8px;
   margin: 8px;
-  margin-left: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -65,6 +64,8 @@ import TopBar from './components/TopBar.vue'
 .content-area {
   flex: 1;
   padding: 0 24px 24px 24px;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
   overflow-y: auto;
 }
 </style>

@@ -13,7 +13,7 @@ const route = useRoute()
 
 const navItems = [
   { name: 'Inicio', path: '/', icon: Home },
-  { name: 'Top Artistss', path: '/artists', icon: Mic2 },
+  { name: 'Top Artistas', path: '/artists', icon: Mic2 },
   { name: 'Top Canciones', path: '/songs', icon: Music },
   { name: 'Top Álbumes', path: '/albums', icon: Disc },
   { name: 'Evolución', path: '/evolution', icon: LineChart },

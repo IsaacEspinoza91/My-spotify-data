@@ -96,9 +96,13 @@ const getInitials = (name) => {
 
 <template>
   <div class="top-artists-view view-container">
-    <header class="view-header">
-      <h1>Top Artistas</h1>
-    </header>
+    <div class="view-hero-bg"></div>
+    
+    <div class="view-content-wrapper relative-z">
+      <header class="view-header">
+        <h1>Top Artistas</h1>
+        <p class="text-gray subtitle">Los músicos y bandas que dominan tu historial de reproducción.</p>
+      </header>
 
     <FiltersBar 
       v-model="filters" 
@@ -139,11 +143,34 @@ const getInitials = (name) => {
         :total="total" 
       />
     </div>
+    </div>
   </div>
 </template>
 
 <style scoped>
 .view-container {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  min-height: 100%;
+}
+
+.view-hero-bg {
+  position: absolute;
+  top: -24px;
+  left: -24px;
+  right: -24px;
+  height: 200px;
+  background: linear-gradient(180deg, rgba(90, 40, 100, 1) 0%, rgba(24, 24, 24, 1) 100%);
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.relative-z {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   gap: 24px;
@@ -152,6 +179,12 @@ const getInitials = (name) => {
 .view-header h1 {
   font-size: 32px;
   font-weight: 800;
+  margin-top: 32px;
+  margin-bottom: 8px;
+}
+
+.subtitle {
+  font-size: 16px;
 }
 
 .empty-state {
