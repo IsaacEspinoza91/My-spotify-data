@@ -50,7 +50,7 @@ const navItems = [
         <a href="https://github.com/IsaacEspinoza91/My-spotify-data" target="_blank" rel="noopener noreferrer" class="footer-icon" title="GitHub">
           <Github :size="20" />
         </a>
-        <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" class="footer-icon" title="LinkedIn">
+        <a href="https://www.linkedin.com/in/isaacespinozab/" target="_blank" rel="noopener noreferrer" class="footer-icon" title="LinkedIn">
           <Linkedin :size="20" />
         </a>
         <a href="mailto:isaac.eb@proton.me" class="footer-icon" title="Email">
